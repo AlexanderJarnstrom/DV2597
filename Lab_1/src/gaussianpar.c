@@ -7,31 +7,30 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdalign.h>
 #include <pthread.h>
+#include <immintrin.h>
 
 #define MAX_SIZE 4096
-#define THREADS 4
+#define THREADS 16
 #define MAX_SEG_SIZE MAX_SIZE / THREADS
 
 typedef double matrix[MAX_SIZE][MAX_SIZE];
-typedef double* matrix_segment[MAX_SEG_SIZE];
 
 typedef struct {
   int id;
-  unsigned size;
-  matrix_segment seg;
 } th_argument;
 
 int N;                /* matrix size */
 int maxnum;           /* max number of element*/
 char *Init;           /* matrix init type */
 int PRINT;            /* print switch */
-matrix A;             /* matrix A */
-double b[MAX_SIZE];   /* vector b */
-double y[MAX_SIZE];   /* vector y */
+alignas(32) matrix A;             /* matrix A */
+alignas(32) double b[MAX_SIZE];   /* vector b */
+alignas(32) double y[MAX_SIZE];   /* vector y */
 
 th_argument arguments[THREADS];
-pthread_barrier_t div_stage;
+pthread_barrier_t step_sync;
 
 
 /* forward declarations */
@@ -72,7 +71,7 @@ start_job(void)
   pthread_t threads[THREADS];
   int i;
 
-  pthread_barrier_init(&div_stage, NULL, THREADS);
+  pthread_barrier_init(&step_sync, NULL, THREADS);
 
   for (i = 0; i < THREADS; i++)
   {
@@ -88,8 +87,44 @@ start_job(void)
 void* 
 work(void* _arg)
 {
+  int i, j, k;
   th_argument arg = *(th_argument*) _arg;
-  printf("%d\n", arg.id);
+
+  double temp[MAX_SIZE];
+
+  for (k = 0; k < N; k++)
+  {
+    for (j = (k + 1) + arg.id; j < N; j += THREADS)
+    {
+      A[k][j] = A[k][j] / A[k][k]; /* Division step */
+    }
+
+    if (arg.id == 0)
+      y[k] = b[k] / A[k][k];
+
+    pthread_barrier_wait(&step_sync); /* Wait for other threads to finish first row */
+
+    if (arg.id == 0)
+      A[k][k] = 1.0;
+
+    for (i = (k + 1) + arg.id; i < N; i += THREADS) 
+    {
+      for (j = k+1; j < N; j++)
+      {
+        temp[j] = A[i][k]*A[k][j];
+      }
+
+      for (j = k+1; j < N; j++)
+      {
+        A[i][j] -= temp[j];
+      }
+
+      b[i] = b[i] - A[i][k]*y[k];
+      A[i][k] = 0.0;
+    }
+    pthread_barrier_wait(&step_sync); /* Wait for other threads to finnish eliminating */
+  }
+
   return NULL;
 }
 
@@ -189,22 +224,13 @@ Init_Default()
 
 void
 Init_Arguments(void) {
-  printf("segment size = %dx%d.\n", N / THREADS, N);
-  printf("segmenting matrix ... ");
+  printf("Initializing thread arguments ... ");
 
   int i, j;
 
   for (i = 0; i < THREADS; i++ )
   {
     arguments[i].id = i;
-    arguments[i].size = 0;
-  }
-
-  for (i = 0; i < N; i++)
-  {
-    j = i % THREADS;
-    arguments[j].seg[arguments[j].size] = A[i];
-    arguments[j].size += 1;
   }
 
   printf("done.\n");

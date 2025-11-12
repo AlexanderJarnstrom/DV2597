@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O2 -g -lpthread
+CFLAGS = -O2 -g -lpthread -march=native
 
 TARGET = gaussianpar
 BUILD_DIR = build
@@ -37,7 +37,6 @@ $(BUILD_DIR):
 .PHONY: clean cleanall
 
 test: $(BUILD_DIR)/gaussianseq $(BUILD_DIR)/$(TARGET)
-	@cd $(TEST_DIR)
 	./$(TEST_DIR)/$(TEST) $(BUILD_DIR)/gaussianseq $(BUILD_DIR)/$(TARGET)
 
 
