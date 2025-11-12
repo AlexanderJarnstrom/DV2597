@@ -5,24 +5,42 @@
  ***************************************************************************/
 
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <pthread.h>
 
 #define MAX_SIZE 4096
+#define THREADS 4
+#define MAX_SEG_SIZE MAX_SIZE / THREADS
 
 typedef double matrix[MAX_SIZE][MAX_SIZE];
+typedef double* matrix_segment[MAX_SEG_SIZE];
 
-int	N;		/* matrix size		*/
-int	maxnum;		/* max number of element*/
-char	*Init;		/* matrix init type	*/
-int	PRINT;		/* print switch		*/
-matrix	A;		/* matrix A		*/
-double	b[MAX_SIZE];	/* vector b             */
-double	y[MAX_SIZE];	/* vector y             */
+typedef struct {
+  int id;
+  unsigned size;
+  matrix_segment seg;
+} th_argument;
+
+int N;                /* matrix size */
+int maxnum;           /* max number of element*/
+char *Init;           /* matrix init type */
+int PRINT;            /* print switch */
+matrix A;             /* matrix A */
+double b[MAX_SIZE];   /* vector b */
+double y[MAX_SIZE];   /* vector y */
+
+th_argument arguments[THREADS];
+pthread_barrier_t div_stage;
+
 
 /* forward declarations */
+void start_job(void);
 void* work(void*);
 void Init_Matrix(void);
 void Print_Matrix(void);
 void Init_Default(void);
+void Init_Arguments(void);
 int Read_Options(int, char **);
 
 int
@@ -30,16 +48,53 @@ main(int argc, char **argv)
 {
   int i, timestart, timeend, iter;
 
-  Init_Default();		/* Init default values	*/
-  Read_Options(argc,argv);	/* Read arguments	*/
-  Init_Matrix();		/* Init the matrix	*/
-  work();
+  Init_Default();           /* Init default values */
+  Read_Options(argc,argv);  /* Read arguments */
+  Init_Matrix();            /* Init the matrix */
+  Init_Arguments();
+  start_job();
   if (PRINT == 1)
     Print_Matrix();
 }
 
-void *
-work(void * args)
+/*
+  1. create x threads.
+  2. assign rows to the threads. (cyclic).
+  3. if thread is owner of kth row preform div step and remove from 
+      elimination step.
+  4. notify all.
+  5. preform elimination step.
+*/
+
+void
+start_job(void)
+{
+  pthread_t threads[THREADS];
+  int i;
+
+  pthread_barrier_init(&div_stage, NULL, THREADS);
+
+  for (i = 0; i < THREADS; i++)
+  {
+    pthread_create(&threads[i], NULL, work, (void*) &arguments[i]);
+  }
+
+  for (i = 0; i < THREADS; i++)
+  {
+    pthread_join(threads[i], NULL);
+  }
+}
+
+void* 
+work(void* _arg)
+{
+  th_argument arg = *(th_argument*) _arg;
+  printf("%d\n", arg.id);
+  return NULL;
+}
+
+void
+seq_work(void)
 {
   int i, j, k;
 
@@ -130,6 +185,29 @@ Init_Default()
   Init = "rand";
   maxnum = 15.0;
   PRINT = 0;
+}
+
+void
+Init_Arguments(void) {
+  printf("segment size = %dx%d.\n", N / THREADS, N);
+  printf("segmenting matrix ... ");
+
+  int i, j;
+
+  for (i = 0; i < THREADS; i++ )
+  {
+    arguments[i].id = i;
+    arguments[i].size = 0;
+  }
+
+  for (i = 0; i < N; i++)
+  {
+    j = i % THREADS;
+    arguments[j].seg[arguments[j].size] = A[i];
+    arguments[j].size += 1;
+  }
+
+  printf("done.\n");
 }
 
 int

@@ -4,6 +4,8 @@ CFLAGS = -O2 -g -lpthread
 TARGET = gaussianpar
 BUILD_DIR = build
 INTRO_DIR = intro
+TEST_DIR = tests
+TEST = benchmark.sh
 SRC_DIR = src
 INC_DIR = inc
  
@@ -34,5 +36,12 @@ $(BUILD_DIR):
 
 .PHONY: clean cleanall
 
+test: $(BUILD_DIR)/gaussianseq $(BUILD_DIR)/$(TARGET)
+	@cd $(TEST_DIR)
+	./$(TEST_DIR)/$(TEST) $(BUILD_DIR)/gaussianseq $(BUILD_DIR)/$(TARGET)
+
+
 clean:
 	rm -rf $(BUILD_DIR)
+	rm $(TEST_DIR)/gaussianseq
+	rm $(TEST_DIR)/$(TARGET)

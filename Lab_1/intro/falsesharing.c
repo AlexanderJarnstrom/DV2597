@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <string.h>
 
 #define LOOPS (2000*1000000)
 

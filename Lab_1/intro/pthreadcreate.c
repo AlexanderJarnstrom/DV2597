@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <pthread.h> // pthread types and functions
 
-void* child() {
+void* child(void *) {
 	printf("This is the child thread.\n");
+  return NULL;
 }
 
 int main(int argc, char** argv) {
