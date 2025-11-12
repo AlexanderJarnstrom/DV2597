@@ -1,3 +1,6 @@
+# Debug
+vgcore.*
+
 # Prerequisites
 *.d
 
@@ -6,6 +9,13 @@
 *.lo
 *.o
 *.obj
+
+Lab_1/build/
+Lab_1/build/*
+Lab_2/build/
+Lab_2/build/*
+Lab_3/build/
+Lab_3/build/*
 
 # Precompiled Headers
 *.gch

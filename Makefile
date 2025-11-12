@@ -1,10 +1,8 @@
-.PHONY: dev/lab1 dev/lab2 dev/lab3
+LAB_1_DIR = Lab_1
+LAB_2_DIR = Lab_2
+LAB_3_DIR = Lab_3
 
-dev/lab1:
-	docker run -v "./Lab_1/:/usr/src/" -ti jarnstrom/dev_base:latest
-
-dev/lab2:
-	docker run -v "./Lab_2/:/usr/src/" -ti jarnstrom/dev_base:latest
-
-dev/lab3:
-	docker run -v "./Lab_3/:/usr/src/" -ti jarnstrom/dev_base:latest
+all: $(LAB_1_DIR) $(LAB_2_DIR) $(LAB_3_DIR)
+	@make -C $(LAB_1_DIR)
+	@make -C $(LAB_2_DIR)
+	@make -C $(LAB_3_DIR)
