@@ -1,5 +1,7 @@
 # Debug
 vgcore.*
+callgrind*
+intel/
 
 # Prerequisites
 *.d
