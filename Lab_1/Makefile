@@ -1,7 +1,6 @@
 CC = gcc
 CFLAGS = -O3 -g -lpthread -march=native -mtune=native
 
-TARGET = gaussianpar
 BUILD_DIR = build
 INTRO_DIR = intro
 TEST_DIR = tests
@@ -9,38 +8,36 @@ TEST = benchmark.sh
 SRC_DIR = src
 INC_DIR = inc
  
-SRCS = $(wildcard $(SRC_DIR)/*.c)
-OBJS = $(patsubst %.c, $(BUILD_DIR)/%.o, $(notdir $(SRCS)))
-DEPS = $(wildcard $(INC_DIR)/*.h)
-
-all: intro $(BUILD_DIR)/$(TARGET)
-
-intro: $(BUILD_DIR)
-	$(CC) $(CFLAGS) -o $(BUILD_DIR)/bankaccount $(INTRO_DIR)/bankaccount.c
-	$(CC) $(CFLAGS) -o $(BUILD_DIR)/falsesharing $(INTRO_DIR)/falsesharing.c
-	$(CC) $(CFLAGS) -o $(BUILD_DIR)/gaussianseq $(INTRO_DIR)/gaussianseq.c
-	$(CC) $(CFLAGS) -o $(BUILD_DIR)/pthreadcreate $(INTRO_DIR)/pthreadcreate.c
-	$(CC) $(CFLAGS) -o $(BUILD_DIR)/pthreadcreate2 $(INTRO_DIR)/pthreadcreate2.c
-	$(CC) $(CFLAGS) -o $(BUILD_DIR)/pthreadcreate3 $(INTRO_DIR)/pthreadcreate3.c
-	$(CC) $(CFLAGS) -o $(BUILD_DIR)/qsortseq $(INTRO_DIR)/qsortseq.c
-
-$(BUILD_DIR)/$(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(CFLAGS)
-
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(DEPS)
-	@mkdir -p $(BUILD_DIR)
-	$(CC) -c -o $@ $< $(CFLAGS)
+all: $(BUILD_DIR)
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/bankaccount $(SRC_DIR)/bankaccount.c
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/falsesharing $(SRC_DIR)/falsesharing.c
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/gaussianseq $(SRC_DIR)/gaussianseq.c
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/pthreadcreate $(SRC_DIR)/pthreadcreate.c
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/pthreadcreate2 $(SRC_DIR)/pthreadcreate2.c
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/pthreadcreate3 $(SRC_DIR)/pthreadcreate3.c
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/qsortseq $(SRC_DIR)/qsortseq.c
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/qsortpar $(SRC_DIR)/qsortpar.c
+	$(CC) $(CFLAGS) -o $(BUILD_DIR)/gaussianpar $(SRC_DIR)/gaussianpar.c
 
 $(BUILD_DIR):
 	@mkdir -p $(BUILD_DIR)
 
-.PHONY: clean cleanall
+.PHONY: clean cleanall test/gaussian test/qsort
 
-test: $(BUILD_DIR)/gaussianseq $(BUILD_DIR)/$(TARGET)
-	./$(TEST_DIR)/$(TEST) $(BUILD_DIR)/gaussianseq $(BUILD_DIR)/$(TARGET)
+test/gaussian: $(BUILD_DIR)/gaussianseq $(BUILD_DIR)/gaussianpar
+	./$(TEST_DIR)/$(TEST) $(BUILD_DIR)/gaussianseq $(BUILD_DIR)/gaussianpar
 
+test/qsort: $(BUILD_DIR)/qsortpar $(BUILD_DIR)/qsortseq
+	@echo -n "Running $(BUILD_DIR)/qsortpar ... "
+	@./$(BUILD_DIR)/qsortpar > $(TEST_DIR)/qsortpar.txt
+	@echo "done."
+	@echo -n "Running $(BUILD_DIR)/qsortseq ... "
+	@./$(BUILD_DIR)/qsortseq > $(TEST_DIR)/qsortseq.txt
+	@echo "done."
+	diff $(TEST_DIR)/qsortpar.txt $(TEST_DIR)/qsortseq.txt
 
 clean:
 	rm -rf $(BUILD_DIR)
-	rm $(TEST_DIR)/gaussianseq
-	rm $(TEST_DIR)/$(TARGET)
+	rm -f $(TEST_DIR)/qsortpar.txt
+	rm -f $(TEST_DIR)/qsortseq.txt
+	rm -f $(TEST_DIR)/callgrind/*
