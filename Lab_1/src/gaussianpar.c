@@ -8,7 +8,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include <immintrin.h>
 
 #define MAX_SIZE 4096
 #define THREADS 16
@@ -21,11 +20,11 @@ typedef struct {
   int id;
 } th_argument;
 
-int N;                /* matrix size */
-int maxnum;           /* max number of element*/
-char *Init;           /* matrix init type */
-int PRINT;            /* print switch */
-matrix A;             /* matrix A */
+int N;      /* matrix size */
+int maxnum; /* max number of element*/
+char *Init; /* matrix init type */
+int PRINT;  /* print switch */
+matrix A;   /* matrix A */
 vector b;   /* vector b */
 vector y;   /* vector y */
 
@@ -55,15 +54,15 @@ main(int argc, char **argv)
   if (PRINT == 1)
     Print_Matrix();
 
-  _mm_free(b);
-  _mm_free(y);
+  free(b);
+  free(y);
 
   for (i = 0; i < MAX_SIZE; i++)
   {
-    _mm_free(A[i]);
+    free(A[i]);
   }
 
-  _mm_free(A);
+  free(A);
 }
 
 /*
@@ -100,7 +99,7 @@ work(void* _arg)
   int i, j, k;
   th_argument arg = *(th_argument*) _arg;
 
-  vector temp = _mm_malloc(sizeof(double) * MAX_SIZE, 64);
+  vector temp = malloc(sizeof(double) * MAX_SIZE);
 
   for (k = 0; k < N; k++)
   {
@@ -135,7 +134,7 @@ work(void* _arg)
     pthread_barrier_wait(&step_sync); /* Wait for other threads to finnish eliminating */
   }
 
-  _mm_free(temp);
+  free(temp);
 
   return NULL;
 }
@@ -170,13 +169,13 @@ Init_Matrix()
   printf("Init	  = %s \n", Init);
   printf("Initializing matrix...");
 
-  b = (double *) _mm_malloc(MAX_SIZE * sizeof(double), 64);
-  y = (double *) _mm_malloc(MAX_SIZE * sizeof(double), 64);
-  A = (double**) _mm_malloc(MAX_SIZE * sizeof(double*), 64);
+  b = (double *) malloc(MAX_SIZE * sizeof(double));
+  y = (double *) malloc(MAX_SIZE * sizeof(double));
+  A = (double**) malloc(MAX_SIZE * sizeof(double*));
 
   for (i = 0; i < MAX_SIZE; i++)
   {
-    A[i] = (double*) _mm_malloc(MAX_SIZE * sizeof(double), 64);
+    A[i] = (double*) malloc(MAX_SIZE * sizeof(double));
   }
 
   if (strcmp(Init,"rand") == 0) {

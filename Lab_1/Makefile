@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O3 -g -lpthread -march=native -mtune=native
+CFLAGS = -O2 -g -lpthread
 
 BUILD_DIR = build
 INTRO_DIR = intro
