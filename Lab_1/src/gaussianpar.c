@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <stdalign.h>
 #include <pthread.h>
 #include <immintrin.h>
 
@@ -15,7 +14,8 @@
 #define THREADS 16
 #define MAX_SEG_SIZE MAX_SIZE / THREADS
 
-typedef double matrix[MAX_SIZE][MAX_SIZE];
+typedef double **matrix;
+typedef double *vector;
 
 typedef struct {
   int id;
@@ -25,9 +25,9 @@ int N;                /* matrix size */
 int maxnum;           /* max number of element*/
 char *Init;           /* matrix init type */
 int PRINT;            /* print switch */
-alignas(32) matrix A;             /* matrix A */
-alignas(32) double b[MAX_SIZE];   /* vector b */
-alignas(32) double y[MAX_SIZE];   /* vector y */
+matrix A;             /* matrix A */
+vector b;   /* vector b */
+vector y;   /* vector y */
 
 th_argument arguments[THREADS];
 pthread_barrier_t step_sync;
@@ -54,6 +54,16 @@ main(int argc, char **argv)
   start_job();
   if (PRINT == 1)
     Print_Matrix();
+
+  _mm_free(b);
+  _mm_free(y);
+
+  for (i = 0; i < MAX_SIZE; i++)
+  {
+    _mm_free(A[i]);
+  }
+
+  _mm_free(A);
 }
 
 /*
@@ -90,7 +100,7 @@ work(void* _arg)
   int i, j, k;
   th_argument arg = *(th_argument*) _arg;
 
-  double temp[MAX_SIZE];
+  vector temp = _mm_malloc(sizeof(double) * MAX_SIZE, 64);
 
   for (k = 0; k < N; k++)
   {
@@ -125,6 +135,8 @@ work(void* _arg)
     pthread_barrier_wait(&step_sync); /* Wait for other threads to finnish eliminating */
   }
 
+  _mm_free(temp);
+
   return NULL;
 }
 
@@ -157,6 +169,15 @@ Init_Matrix()
   printf("\nmaxnum    = %d \n", maxnum);
   printf("Init	  = %s \n", Init);
   printf("Initializing matrix...");
+
+  b = (double *) _mm_malloc(MAX_SIZE * sizeof(double), 64);
+  y = (double *) _mm_malloc(MAX_SIZE * sizeof(double), 64);
+  A = (double**) _mm_malloc(MAX_SIZE * sizeof(double*), 64);
+
+  for (i = 0; i < MAX_SIZE; i++)
+  {
+    A[i] = (double*) _mm_malloc(MAX_SIZE * sizeof(double), 64);
+  }
 
   if (strcmp(Init,"rand") == 0) {
     for (i = 0; i < N; i++){

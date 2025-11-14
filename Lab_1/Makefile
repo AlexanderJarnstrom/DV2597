@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O2 -g -lpthread -march=native
+CFLAGS = -O3 -g -lpthread -march=native -mtune=native
 
 TARGET = gaussianpar
 BUILD_DIR = build
