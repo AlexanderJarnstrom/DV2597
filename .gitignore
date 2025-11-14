@@ -2,6 +2,7 @@
 vgcore.*
 callgrind*
 intel/
+tests/
 
 # Prerequisites
 *.d
