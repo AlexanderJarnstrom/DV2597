@@ -4,11 +4,12 @@
  *
  ***************************************************************************/
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include <time.h>
 
 #define KILO (1024)
 #define MEGA (1024*1024)
@@ -109,6 +110,8 @@ quick_sort(void *_arg)
     {
       pthread_create(&low_thread, NULL, quick_sort, &low_arg);
       created_low = 1;
+      // sem_getvalue(&sem, &sem_v);
+      // printf("%d threads running.\n", THREADS - sem_v);
     }
     else 
     {
@@ -127,6 +130,8 @@ quick_sort(void *_arg)
     {
       pthread_create(&high_thread, NULL, quick_sort, &high_arg);
       created_high = 1;
+      // sem_getvalue(&sem, &sem_v);
+      // printf("%d threads running.\n", THREADS - sem_v);
     }
     else 
     {
@@ -134,34 +139,20 @@ quick_sort(void *_arg)
     }
   }
 
-  if (size_low < size_high)
+  while(created_low || created_high)
   {
-    if (created_high)
-    { 
-      pthread_join(high_thread, NULL);
-      sem_post(&sem);
-    }
-    if (created_low)
+    if (created_low && !pthread_tryjoin_np(low_thread, NULL))
     {
-      pthread_join(low_thread, NULL);
       sem_post(&sem);
+      created_low = 0;
     }
-  }
-  else
-  {
-    if (created_low)
-    {
-      pthread_join(low_thread, NULL);
-      sem_post(&sem);
-    }
-    if (created_high)
-    { 
-      pthread_join(high_thread, NULL);
-      sem_post(&sem);
-    }
-  }
 
-  
+    if (created_high && !pthread_tryjoin_np(high_thread, NULL))
+    {
+      sem_post(&sem);
+      created_high = 0;
+    }
+  }
 
   return NULL;
 }
@@ -180,17 +171,12 @@ validate()
 int
 main(int argc, char **argv)
 {
-  time_t start, end;
   argument_t arg = {v, 0, MAX_ITEMS-1};
   sem_init(&sem, 0, THREADS);
 
   init_array();
   //print_array();
-  time(&start);
   quick_sort((void*) &arg);
-  time(&end);
-
-  printf("%lds\n", end - start);
-  //validate();
+  validate();
   //print_array();
 }

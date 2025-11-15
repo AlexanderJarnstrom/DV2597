@@ -6,7 +6,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
 
 #define KILO (1024)
 #define MEGA (1024*1024)
@@ -89,12 +88,8 @@ quick_sort(int *v, unsigned low, unsigned high)
 int
 main(int argc, char **argv)
 {
-    time_t start, end;
     init_array();
     //print_array();
-    time(&start);
     quick_sort(v, 0, MAX_ITEMS-1);
-    time(&end);
-    printf("%lds\n", end - start);
-    //print_array();
+    print_array();
 }
