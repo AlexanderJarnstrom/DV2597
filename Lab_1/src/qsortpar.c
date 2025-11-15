@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <time.h>
 
 #define KILO (1024)
 #define MEGA (1024*1024)
@@ -179,12 +180,17 @@ validate()
 int
 main(int argc, char **argv)
 {
+  time_t start, end;
   argument_t arg = {v, 0, MAX_ITEMS-1};
   sem_init(&sem, 0, THREADS);
 
   init_array();
   //print_array();
+  time(&start);
   quick_sort((void*) &arg);
+  time(&end);
+
+  printf("%lds\n", end - start);
   //validate();
   //print_array();
 }
