@@ -13,8 +13,8 @@
 #define THREADS 16
 #define MAX_SEG_SIZE MAX_SIZE / THREADS
 
-typedef double **matrix;
-typedef double *vector;
+typedef double matrix[MAX_SIZE][MAX_SIZE];
+typedef double vector[MAX_SIZE];
 
 typedef struct {
   int id;
@@ -27,6 +27,7 @@ int PRINT;  /* print switch */
 matrix A;   /* matrix A */
 vector b;   /* vector b */
 vector y;   /* vector y */
+vector temp[THREADS];
 
 th_argument arguments[THREADS];
 pthread_barrier_t step_sync;
@@ -53,16 +54,6 @@ main(int argc, char **argv)
   start_job();
   if (PRINT == 1)
     Print_Matrix();
-
-  free(b);
-  free(y);
-
-  for (i = 0; i < MAX_SIZE; i++)
-  {
-    free(A[i]);
-  }
-
-  free(A);
 }
 
 /*
@@ -99,7 +90,6 @@ work(void* _arg)
   int i, j, k;
   th_argument arg = *(th_argument*) _arg;
 
-  vector temp = malloc(sizeof(double) * MAX_SIZE);
 
   for (k = 0; k < N; k++)
   {
@@ -120,12 +110,12 @@ work(void* _arg)
     {
       for (j = k+1; j < N; j++)
       {
-        temp[j] = A[i][k]*A[k][j];
+        temp[arg.id][j] = A[i][k]*A[k][j];
       }
 
       for (j = k+1; j < N; j++)
       {
-        A[i][j] -= temp[j];
+        A[i][j] -= temp[arg.id][j];
       }
 
       b[i] = b[i] - A[i][k]*y[k];
@@ -133,8 +123,6 @@ work(void* _arg)
     }
     pthread_barrier_wait(&step_sync); /* Wait for other threads to finnish eliminating */
   }
-
-  free(temp);
 
   return NULL;
 }
@@ -168,15 +156,6 @@ Init_Matrix()
   printf("\nmaxnum    = %d \n", maxnum);
   printf("Init	  = %s \n", Init);
   printf("Initializing matrix...");
-
-  b = (double *) malloc(MAX_SIZE * sizeof(double));
-  y = (double *) malloc(MAX_SIZE * sizeof(double));
-  A = (double**) malloc(MAX_SIZE * sizeof(double*));
-
-  for (i = 0; i < MAX_SIZE; i++)
-  {
-    A[i] = (double*) malloc(MAX_SIZE * sizeof(double));
-  }
 
   if (strcmp(Init,"rand") == 0) {
     for (i = 0; i < N; i++){
